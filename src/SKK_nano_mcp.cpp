@@ -12,13 +12,29 @@
 // ------------------------------------------------------------------
 Adafruit_SSD1306 OLED(-1);
 
-extern uint8_t button;
+uint8_t button __attribute__((weak)) = 2;
 
-extern uint16_t s1,s2,s3,s4,s5,s6,s7,s8;
-extern uint16_t sb1,sb2,sb3,sb4,sb5,sb6,sb7,sb8;
+uint16_t s1 __attribute__((weak)) = 0;
+uint16_t s2 __attribute__((weak)) = 0;
+uint16_t s3 __attribute__((weak)) = 0;
+uint16_t s4 __attribute__((weak)) = 0;
+uint16_t s5 __attribute__((weak)) = 0;
+uint16_t s6 __attribute__((weak)) = 0;
+uint16_t s7 __attribute__((weak)) = 0;
+uint16_t s8 __attribute__((weak)) = 0;
 
-extern uint16_t a1,a2,a3,a4,a5,a6,a7,a8;
-extern uint16_t b1,b2,b3,b4,b5,b6,b7,b8;
+uint16_t a1 __attribute__((weak)) = 500;
+uint16_t a2 __attribute__((weak)) = 500;
+uint16_t a3 __attribute__((weak)) = 500;
+uint16_t a4 __attribute__((weak)) = 500;
+uint16_t a5 __attribute__((weak)) = 500;
+uint16_t a6 __attribute__((weak)) = 500;
+uint16_t a7 __attribute__((weak)) = 500;
+uint16_t a8 __attribute__((weak)) = 500;
+
+// ค่าชดเชยความเร็วมอเตอร์: main สามารถกำหนดค่าใหม่ได้
+int speed_L __attribute__((weak)) = 0;
+int speed_R __attribute__((weak)) = 0;
 
 namespace {
 
@@ -31,15 +47,13 @@ const uint8_t DL2  = 9;
 const uint8_t PWML = 5;
 
 Adafruit_MCP3008 adcFront;
-Adafruit_MCP3008 adcBack;
+Servo servoMotor;
+const uint8_t SERVO_PIN = A0;
 
 uint16_t minFront[8];
 uint16_t maxFront[8];
-uint16_t minBack[8];
-uint16_t maxBack[8];
 
 uint16_t defaultFront[8];
-uint16_t defaultBack[8];
 
 const uint16_t EEPROM_MAGIC = 0x4D43;
 const int EEPROM_ADDR = 0;
@@ -47,17 +61,14 @@ const int EEPROM_ADDR = 0;
 struct CalibrationEEPROM {
   uint16_t magic;
   uint16_t front[8];
-  uint16_t back[8];
 };
 
 void captureDefaults()
 {
   uint16_t f[8] = {a1,a2,a3,a4,a5,a6,a7,a8};
-  uint16_t b[8] = {b1,b2,b3,b4,b5,b6,b7,b8};
 
   for (byte i = 0; i < 8; i++) {
     defaultFront[i] = f[i];
-    defaultBack[i]  = b[i];
   }
 }
 
@@ -66,14 +77,6 @@ void resetFrontMinMax()
   for (byte i = 0; i < 8; i++) {
     minFront[i] = 1023;
     maxFront[i] = 0;
-  }
-}
-
-void resetBackMinMax()
-{
-  for (byte i = 0; i < 8; i++) {
-    minBack[i] = 1023;
-    maxBack[i] = 0;
   }
 }
 
@@ -89,18 +92,6 @@ void sampleFront()
   }
 }
 
-void sampleBack()
-{
-  readBack();
-
-  uint16_t v[8] = {sb1,sb2,sb3,sb4,sb5,sb6,sb7,sb8};
-
-  for (byte i = 0; i < 8; i++) {
-    if (v[i] < minBack[i]) minBack[i] = v[i];
-    if (v[i] > maxBack[i]) maxBack[i] = v[i];
-  }
-}
-
 void calibrationMoveFront(int left, int right, unsigned long t)
 {
   unsigned long start = millis();
@@ -108,16 +99,6 @@ void calibrationMoveFront(int left, int right, unsigned long t)
 
   while (millis() - start < t) {
     sampleFront();
-  }
-}
-
-void calibrationMoveBack(int left, int right, unsigned long t)
-{
-  unsigned long start = millis();
-  run(left, right);
-
-  while (millis() - start < t) {
-    sampleBack();
   }
 }
 
@@ -131,18 +112,6 @@ void calculateFrontThreshold()
   a6 = (minFront[5] + maxFront[5]) / 2;
   a7 = (minFront[6] + maxFront[6]) / 2;
   a8 = (minFront[7] + maxFront[7]) / 2;
-}
-
-void calculateBackThreshold()
-{
-  b1 = (minBack[0] + maxBack[0]) / 2;
-  b2 = (minBack[1] + maxBack[1]) / 2;
-  b3 = (minBack[2] + maxBack[2]) / 2;
-  b4 = (minBack[3] + maxBack[3]) / 2;
-  b5 = (minBack[4] + maxBack[4]) / 2;
-  b6 = (minBack[5] + maxBack[5]) / 2;
-  b7 = (minBack[6] + maxBack[6]) / 2;
-  b8 = (minBack[7] + maxBack[7]) / 2;
 }
 
 void showCalibrationFront()
@@ -181,42 +150,6 @@ void showCalibrationFront()
   }
 }
 
-void showCalibrationBack()
-{
-  while (digitalRead(button) == HIGH) {}
-  delay(100);
-
-  while (true) {
-    int16_t y = map(analogRead(A7), 0, 1023, 0, -70);
-    uint16_t mid[8] = {b1,b2,b3,b4,b5,b6,b7,b8};
-
-    OLED.clearDisplay();
-    OLED.setTextColor(WHITE, BLACK);
-    OLED.setTextSize(1);
-    OLED.setCursor(0, y);
-    OLED.println(F("BACK MIN MAX MID"));
-
-    for (byte i = 0; i < 8; i++) {
-      OLED.print(F("B")); OLED.print(i + 1);
-      OLED.print(F(" ")); OLED.print(minBack[i]);
-      OLED.print(F(" ")); OLED.print(maxBack[i]);
-      OLED.print(F(" ")); OLED.println(mid[i]);
-    }
-
-    OLED.println(F("PRESS = EXIT"));
-    OLED.display();
-
-    if (digitalRead(button) == HIGH) {
-      delay(30);
-      if (digitalRead(button) == HIGH) {
-        while (digitalRead(button) == HIGH) {}
-        delay(100);
-        return;
-      }
-    }
-  }
-}
-
 void normalSensor()
 {
   while (digitalRead(button) == HIGH) {}
@@ -224,7 +157,6 @@ void normalSensor()
 
   while (true) {
     readFront();
-    readBack();
 
     int16_t y = map(analogRead(A7), 0, 1023, 0, -180);
 
@@ -241,21 +173,7 @@ void normalSensor()
     OLED.print(F("       a6 = ")); OLED.println(s6);
     OLED.print(F("       a7 = ")); OLED.println(s7);
     OLED.print(F("       a8 = ")); OLED.println(s8);
-
     OLED.println();
-
-    OLED.print(F("       b1 = ")); OLED.println(sb1);
-    OLED.print(F("       b2 = ")); OLED.println(sb2);
-    OLED.print(F("       b3 = ")); OLED.println(sb3);
-    OLED.print(F("       b4 = ")); OLED.println(sb4);
-    OLED.print(F("       b5 = ")); OLED.println(sb5);
-    OLED.print(F("       b6 = ")); OLED.println(sb6);
-    OLED.print(F("       b7 = ")); OLED.println(sb7);
-    OLED.print(F("       b8 = ")); OLED.println(sb8);
-
-    OLED.println();
-    OLED.print(F("       ac6 = "));
-    OLED.println(analogRead(A6));
     OLED.display();
 
     if (digitalRead(button) == HIGH) {
@@ -297,34 +215,8 @@ void calibrateFrontInternal()
   showCalibrationFront();
 }
 
-void calibrateBackInternal()
-{
-  resetBackMinMax();
 
-  OLED.clearDisplay();
-  OLED.setTextColor(WHITE, BLACK);
-  OLED.setTextSize(2);
-  OLED.setCursor(0, 0);
-  OLED.println(F("BACK"));
-  OLED.println(F("CAL..."));
-  OLED.display();
-  delay(300);
-
-  calibrationMoveBack(-100,  100, 500);
-  calibrationMoveBack( 100, -100, 800);
-  calibrationMoveBack(-100,  100, 800);
-  calibrationMoveBack( 100, -100, 800);
-  calibrationMoveBack(-100,  100, 500);
-
-  run(0, 0);
-
-  calculateBackThreshold();
-  saveEEPROM();
-  showCalibrationBack();
-}
-
-} // anonymous namespace
-
+} // namespace
 
 void Motor_begin()
 {
@@ -346,8 +238,8 @@ void OLED_begin()
 
 void Sensor_begin(uint8_t frontCS, uint8_t backCS)
 {
+  (void)backCS;
   adcFront.begin(frontCS);
-  adcBack.begin(backCS);
 }
 
 void begin(uint8_t frontCS, uint8_t backCS)
@@ -371,20 +263,17 @@ void readFront()
   s8 = adcFront.readADC(7);
 }
 
-void readBack()
-{
-  sb1 = adcBack.readADC(0);
-  sb2 = adcBack.readADC(1);
-  sb3 = adcBack.readADC(2);
-  sb4 = adcBack.readADC(3);
-  sb5 = adcBack.readADC(4);
-  sb6 = adcBack.readADC(5);
-  sb7 = adcBack.readADC(6);
-  sb8 = adcBack.readADC(7);
-}
-
 void run(int spl, int spr)
 {
+  if (spl > 0) spl += speed_L;
+  else if (spl < 0) spl -= speed_L;
+
+  if (spr > 0) spr += speed_R;
+  else if (spr < 0) spr -= speed_R;
+
+  spl = constrain(spl, -255, 255);
+  spr = constrain(spr, -255, 255);
+
   if (spl > 0) {
     spl = abs(spl);
     digitalWrite(DL1, LOW);
@@ -428,6 +317,45 @@ void motorTest()
   run(-100,-100); delay(500); run(0,0); delay(500);
 }
 
+
+void servo()
+{
+  while (digitalRead(button) == HIGH) {}
+  delay(100);
+
+  servoMotor.attach(SERVO_PIN);
+
+  while (true) {
+    uint16_t vr = analogRead(A7);
+    uint8_t angle = map(vr, 0, 1023, 0, 180);
+
+    servoMotor.write(angle);
+
+    OLED.clearDisplay();
+    OLED.setTextColor(WHITE, BLACK);
+    OLED.setCursor(0, 0);
+    OLED.setTextSize(2);
+    OLED.println(F("SERVO"));
+    OLED.setTextSize(1);
+    OLED.print(F("ANGLE = "));
+    OLED.println(angle);
+    OLED.println(F("PRESS = EXIT"));
+    OLED.display();
+
+    if (digitalRead(button) == HIGH) {
+      delay(30);
+      if (digitalRead(button) == HIGH) {
+        while (digitalRead(button) == HIGH) {}
+        servoMotor.detach();
+        delay(100);
+        return;
+      }
+    }
+
+    delay(20);
+  }
+}
+
 void P(byte speed)
 {
   while (1) {
@@ -468,43 +396,34 @@ void PT(byte speed, unsigned long t)
   }
 }
 
-void PB(byte speed)
+void B(byte speed)
 {
   while (1) {
     // แก้จากโค้ดเดิม: PB ต้องอ่าน Sensor หลัง
-    readBack();
+    readFront();
 
-    if (((sb1<b1) && (sb2<b2)) || ((sb7<b7) && (sb8<b8))) {
+    if (((s1<a1) && (s2<a2)) || ((s7<a7) && (s8<a8))) {
       run(100,100);
       delay(180);
       run(0,0);
       delay(100);
       break;
     }
-    else if (sb2<b2) run(-100,40);
-    else if (sb3<b3) run(-100,-70);
-    else if (sb6<b6) run(-70,-100);
-    else if (sb7<b7) run(40,-100);
     else run(-speed,-speed);
   }
 }
 
-void PBT(byte speed, unsigned long t)
+void BT(byte speed, unsigned long t)
 {
   unsigned long start = millis();
 
   while (1) {
     // แก้จากโค้ดเดิม: PBT ต้องอ่าน Sensor หลัง
-    readBack();
 
     if (millis() - start >= t) {
       run(0,0);
       break;
     }
-    else if (sb2<b2) run(-100,40);
-    else if (sb3<b3) run(-100,-70);
-    else if (sb6<b6) run(-70,-100);
-    else if (sb7<b7) run(40,-100);
     else run(-speed,-speed);
   }
 }
@@ -603,11 +522,9 @@ void saveEEPROM()
   data.magic = EEPROM_MAGIC;
 
   uint16_t f[8] = {a1,a2,a3,a4,a5,a6,a7,a8};
-  uint16_t b[8] = {b1,b2,b3,b4,b5,b6,b7,b8};
 
   for (byte i = 0; i < 8; i++) {
     data.front[i] = f[i];
-    data.back[i]  = b[i];
   }
 
   EEPROM.put(EEPROM_ADDR, data);
@@ -621,23 +538,18 @@ void loadEEPROM()
   if (data.magic != EEPROM_MAGIC) return;
 
   for (byte i = 0; i < 8; i++) {
-    if (data.front[i] > 1023 || data.back[i] > 1023) return;
+    if (data.front[i] > 1023) return;
   }
 
   a1=data.front[0]; a2=data.front[1]; a3=data.front[2]; a4=data.front[3];
   a5=data.front[4]; a6=data.front[5]; a7=data.front[6]; a8=data.front[7];
 
-  b1=data.back[0]; b2=data.back[1]; b3=data.back[2]; b4=data.back[3];
-  b5=data.back[4]; b6=data.back[5]; b7=data.back[6]; b8=data.back[7];
 }
 
 void resetCalibration()
 {
   a1=defaultFront[0]; a2=defaultFront[1]; a3=defaultFront[2]; a4=defaultFront[3];
   a5=defaultFront[4]; a6=defaultFront[5]; a7=defaultFront[6]; a8=defaultFront[7];
-
-  b1=defaultBack[0]; b2=defaultBack[1]; b3=defaultBack[2]; b4=defaultBack[3];
-  b5=defaultBack[4]; b6=defaultBack[5]; b7=defaultBack[6]; b8=defaultBack[7];
 
   saveEEPROM();
 
@@ -660,7 +572,7 @@ void menu0()
   delay(120);
 
   while (true) {
-    uint8_t select = map(analogRead(A7), 0, 1023, 0, 3);
+    uint8_t select = map(analogRead(A7), 0, 1023, 0, 1);
 
     OLED.clearDisplay();
     OLED.setTextColor(WHITE, BLACK);
@@ -670,10 +582,8 @@ void menu0()
     OLED.println();
     OLED.setTextSize(2);
 
-    if      (select == 0) OLED.println(F("> NORMAL"));
-    else if (select == 1) OLED.println(F("> FRONT"));
-    else if (select == 2) OLED.println(F("> BACK"));
-    else                  OLED.println(F("> RESET"));
+    if (select == 0) OLED.println(F("> NORMAL"));
+    else             OLED.println(F("> FRONT"));
 
     OLED.setTextSize(1);
     OLED.println(F("PRESS = ENTER"));
@@ -686,10 +596,8 @@ void menu0()
         while (digitalRead(button) == HIGH) {}
         delay(100);
 
-        if      (select == 0) normalSensor();
-        else if (select == 1) calibrateFrontInternal();
-        else if (select == 2) calibrateBackInternal();
-        else                  resetCalibration();
+        if (select == 0) normalSensor();
+        else             calibrateFrontInternal();
 
         return;
       }
@@ -698,4 +606,3 @@ void menu0()
     delay(30);
   }
 }
-

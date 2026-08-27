@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Servo.h>
 
 #ifndef SKK_NANO_MCP_H
 #define SKK_NANO_MCP_H
@@ -16,18 +17,21 @@ void Motor_begin();
 void OLED_begin();
 void Sensor_begin(uint8_t frontCS = 10, uint8_t backCS = 3);
 
-// MENU 0: NORMAL / FRONT / BACK / RESET
+// MENU 0: NORMAL / FRONT / RESET
 void menu0();
 
 // Motor
+extern int speed_L;
+extern int speed_R;
 void run(int spl, int spr);
 void motorTest();
+void servo();
 
 // เดินหน้า / ถอยหลัง
 void P(byte speed);
 void PT(byte speed, unsigned long t);
-void PB(byte speed);
-void PBT(byte speed, unsigned long t);
+void B(byte speed);
+void BT(byte speed, unsigned long t);
 
 // เลี้ยวซ้าย
 void L(byte sp = 150);
@@ -43,7 +47,6 @@ void R2(byte sp = 150);
 
 // ถ้าต้องการอ่าน Sensor จาก main โดยตรง
 void readFront();
-void readBack();
 
 // EEPROM
 void saveEEPROM();
