@@ -17,7 +17,7 @@ void Motor_begin();
 void OLED_begin();
 void Sensor_begin(uint8_t frontCS = 10, uint8_t backCS = 3);
 
-// MENU 0: NORMAL / FRONT / RESET
+// MENU 0: NORMAL / FRONT
 void menu0();
 
 // Motor
@@ -25,7 +25,7 @@ extern int speed_L;
 extern int speed_R;
 void run(int spl, int spr);
 void motorTest();
-void servo(uint8_t pin);
+void servo();
 
 // เดินหน้า / ถอยหลัง
 void P(byte speed);

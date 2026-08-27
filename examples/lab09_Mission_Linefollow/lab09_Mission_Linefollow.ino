@@ -1,5 +1,9 @@
 #include <SKK_nano_mcp.h>
 
+// Servo: ประกาศขาและ object ใน .ino เหมือน SKKnano ต้นแบบ
+uint8_t servo1 = A0;
+Servo sv1;
+
 uint8_t button = 2;
 
 // Threshold Sensor หน้า
@@ -18,6 +22,7 @@ uint16_t s1,s2,s3,s4,s5,s6,s7,s8;
 void setup()
 {
   pinMode(button, INPUT);
+  sv1.attach(servo1);
 
   // Motor + OLED + MCP3008 + EEPROM Calibration
   begin(10, 3);
@@ -72,7 +77,7 @@ int speed_R = 0;
 
 void menu1()
 {
-  servo(A0); // เปลี่ยนขา Servo ได้ที่นี่
+  servo(); // เปลี่ยนขา Servo ได้ที่นี่
 }
 
 void menu2()

@@ -36,6 +36,10 @@ uint16_t a8 __attribute__((weak)) = 500;
 int speed_L __attribute__((weak)) = 0;
 int speed_R __attribute__((weak)) = 0;
 
+// Servo object is declared in the .ino, same style as SKKnano
+extern Servo sv1;
+extern uint8_t servo1;
+
 namespace {
 
 // Motor pins - freeze ตามบอร์ดเดิม
@@ -47,7 +51,6 @@ const uint8_t DL2  = 9;
 const uint8_t PWML = 5;
 
 Adafruit_MCP3008 adcFront;
-Servo servoMotor;
 
 uint16_t minFront[8];
 uint16_t maxFront[8];
@@ -317,18 +320,16 @@ void motorTest()
 }
 
 
-void servo(uint8_t pin)
+void servo()
 {
   while (digitalRead(button) == HIGH) {}
   delay(100);
-
-  servoMotor.attach(pin);
 
   while (true) {
     uint16_t vr = analogRead(A7);
     uint8_t angle = map(vr, 0, 1023, 0, 180);
 
-    servoMotor.write(angle);
+    sv1.write(angle)
 
     OLED.clearDisplay();
     OLED.setTextColor(WHITE, BLACK);
@@ -345,7 +346,7 @@ void servo(uint8_t pin)
       delay(30);
       if (digitalRead(button) == HIGH) {
         while (digitalRead(button) == HIGH) {}
-        servoMotor.detach();
+        sv1.detach();
         delay(100);
         return;
       }
