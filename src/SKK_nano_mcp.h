@@ -25,7 +25,7 @@ extern int speed_L;
 extern int speed_R;
 void run(int spl, int spr);
 void motorTest();
-void servo();
+void servo(uint8_t pin);
 
 // เดินหน้า / ถอยหลัง
 void P(byte speed);

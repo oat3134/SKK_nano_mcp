@@ -27,7 +27,7 @@ void loop()
 {
   bool sw = digitalRead(button);
   uint16_t nob = analogRead(A7);
-  uint8_t menu = map(nob, 0, 1023, 0, 5);
+  uint8_t menu = map(nob, 0, 1023, 0, 4);
 
   OLED.clearDisplay();
   OLED.setTextColor(WHITE, BLACK);
@@ -45,12 +45,11 @@ void loop()
 
   #define mode 1
 
-  if ((sw == mode) && (menu == 0)) menu0(); //senser
-  if ((sw == mode) && (menu == 1)) menu1(); //servo
+  if ((sw == mode) && (menu == 0)) menu0();
+  if ((sw == mode) && (menu == 1)) menu1();
   if ((sw == mode) && (menu == 2)) menu2();
   if ((sw == mode) && (menu == 3)) menu3();
   if ((sw == mode) && (menu == 4)) menu4();
-  if ((sw == mode) && (menu == 5)) menu5();
 
   delay(100);
 }
@@ -73,7 +72,7 @@ int speed_R = 0;
 
 void menu1()
 {
-  servo();
+  servo(A0); // เปลี่ยนขา Servo ได้ที่นี่
 }
 
 void menu2()
@@ -93,9 +92,3 @@ void menu4()
   P(100);
 }
 
-void menu5()
-{
-  P(100);
-  L(100);
-  P(100);
-}

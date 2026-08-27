@@ -48,7 +48,6 @@ const uint8_t PWML = 5;
 
 Adafruit_MCP3008 adcFront;
 Servo servoMotor;
-const uint8_t SERVO_PIN = A0;
 
 uint16_t minFront[8];
 uint16_t maxFront[8];
@@ -318,12 +317,12 @@ void motorTest()
 }
 
 
-void servo()
+void servo(uint8_t pin)
 {
   while (digitalRead(button) == HIGH) {}
   delay(100);
 
-  servoMotor.attach(SERVO_PIN);
+  servoMotor.attach(pin);
 
   while (true) {
     uint16_t vr = analogRead(A7);
