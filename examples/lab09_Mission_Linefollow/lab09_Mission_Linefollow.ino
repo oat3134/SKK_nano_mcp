@@ -32,7 +32,7 @@ void loop()
 {
   bool sw = digitalRead(button);
   uint16_t nob = analogRead(A7);
-  uint8_t menu = map(nob, 0, 1023, 0, 4);
+  uint8_t menu = map(nob, 0, 1023, 0, 5);
 
   OLED.clearDisplay();
   OLED.setTextColor(WHITE, BLACK);
@@ -55,6 +55,7 @@ void loop()
   if ((sw == mode) && (menu == 2)) menu2();
   if ((sw == mode) && (menu == 3)) menu3();
   if ((sw == mode) && (menu == 4)) menu4();
+  if ((sw == mode) && (menu == 5)) menu5();
 
   delay(100);
 }
@@ -97,3 +98,9 @@ void menu4()
   P(100);
 }
 
+void menu5()
+{
+  P(100);
+  R(100);
+  P(100);
+}
