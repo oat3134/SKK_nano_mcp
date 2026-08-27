@@ -329,7 +329,7 @@ void servo()
     uint16_t vr = analogRead(A7);
     uint8_t angle = map(vr, 0, 1023, 0, 180);
 
-    sv1.write(angle)
+    sv1.write(angle);
 
     OLED.clearDisplay();
     OLED.setTextColor(WHITE, BLACK);
