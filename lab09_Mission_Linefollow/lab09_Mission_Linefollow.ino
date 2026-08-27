@@ -1,0 +1,61 @@
+#include <SKK_nano_mcp.h>
+
+// Servo: ประกาศขาและ object ใน .ino เหมือน SKKnano ต้นแบบ
+uint8_t servo1 = A0;
+Servo sv1;
+
+uint8_t button = 2;
+
+// Threshold Sensor หน้า
+uint16_t a1 = 500;
+uint16_t a2 = 500;
+uint16_t a3 = 500;
+uint16_t a4 = 500;
+uint16_t a5 = 500;
+uint16_t a6 = 500;
+uint16_t a7 = 500;
+uint16_t a8 = 500;
+
+// ค่าที่อ่านจาก Sensor
+uint16_t s1,s2,s3,s4,s5,s6,s7,s8;
+
+void setup()
+{
+  pinMode(button, INPUT);
+  sv1.attach(servo1);
+
+  // Motor + OLED + MCP3008 + EEPROM Calibration
+  begin(10, 3);
+}
+
+void loop()
+{
+  bool sw = digitalRead(button);
+  uint16_t nob = analogRead(A7);
+  uint8_t menu = map(nob, 0, 1023, 0, 4);
+
+  OLED.clearDisplay();
+  OLED.setTextColor(WHITE, BLACK);
+  OLED.setCursor(0, 0);
+  OLED.setTextSize(2);
+  OLED.print(F("   "));
+  OLED.println(menu);
+
+  OLED.setTextSize(1);
+  OLED.println(F("  SKK-UTHAI"));
+  OLED.print(F("  "));
+  OLED.print(nob);
+  OLED.println(F(" Robot"));
+  OLED.display();
+
+  #define mode 1
+
+  if ((sw == mode) && (menu == 0)) menu0();
+  if ((sw == mode) && (menu == 1)) menu1();
+  if ((sw == mode) && (menu == 2)) menu2();
+  if ((sw == mode) && (menu == 3)) menu3();
+  if ((sw == mode) && (menu == 4)) menu4();
+
+  delay(100);
+}
+
